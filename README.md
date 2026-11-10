@@ -1,7 +1,4 @@
 # Predicting Battery Material Properties with Machine Learning
-
-Can a computer predict how a battery material will behave just from what it's made of and how its atoms are arranged, without running expensive lab experiments or quantum simulations? This project tests that idea on lithium battery cathode materials.
-
 ---
 
 ## 1. Aim of the project
@@ -28,7 +25,8 @@ The project set out to answer three questions:
 - **Filter:** only stable or near-stable materials (energy above hull ≤ 0.05 eV/atom) with 3 to 6 different elements.
 - **Fair testing:** the data was split 90% for training and 10% for testing (4,653 and 516 materials). The split was grouped by chemical formula, so a formula in the test set never appears in training. The models are tested on chemistry they have never seen, rather than on near-copies of training examples.
 
-<p align="center"><img src="images/bandgap_distribution.png" width="850"></p>
+<img width="1790" height="788" alt="image" src="https://github.com/user-attachments/assets/4befef9d-d552-4710-94ca-d04e74f21b84" />
+
 
 About 16% of the materials are metals (band gap = 0), 68% are semiconductors and 16% are insulators.
 
@@ -65,17 +63,15 @@ Instead of summarising a material as a list of averages, a **Crystal Graph Convo
 
 ## 4. Results
 
-**How to read the scores**
+**Evaluation metrics**
 
 - **R²**: how much of the variation in the true values the model captures. 1.0 is perfect; 0 means the model does no better than guessing the average every time. *Higher is better.*
 - **MAE (mean absolute error)**: on average, how far off a prediction is, in eV (for formation energy, eV per atom). *Lower is better.*
-- **MSE (mean squared error)**: like MAE, but large mistakes count extra. *Lower is better.*
+- **MSE (mean squared error)**: like MAE, but large mistakes are strongly penalized. *Lower is better.*
 
 All scores below are on the **unseen test materials**.
 
-<p align="center"><img src="images/model_comparison.png" width="850"></p>
-
-### 4.1 Formation energy: composition alone is enough
+### 4.1 Formation energy: In this case, the composition alone is enough
 
 | Model | R² | MSE | MAE (eV/atom) |
 |---|---|---|---|
@@ -85,9 +81,10 @@ All scores below are on the **unseen test materials**.
 
 All three models predict formation energy almost perfectly, with typical errors of only about 0.03 to 0.04 eV/atom.
 
-**Why it works so well:** formation energy describes how strongly the atoms in a material bond together overall. That depends mostly on *which* elements are present and in what proportions, and averaging the properties of the elements captures it well. A material's overall stability behaves much like a weighted sum of its ingredients.
+**Formation energy** describes how strongly the atoms in a material bond together overall. That depends mostly on *which* elements are present and in what proportions, and averaging the properties of the elements captures it well. A material's overall stability behaves much like a weighted sum of its elements.
 
-<p align="center"><img src="images/formation_energy_cb.png" width="650"><br><em>CatBoost feature importance for formation energy. A few composition features, mostly about the d-electrons of the metals, carry most of the prediction.</em></p>
+<img width="1102" height="547" alt="image" src="https://github.com/user-attachments/assets/89f34121-361e-48ec-8351-6e39ce99ad2f" />
+<br><em>CatBoost feature importance for formation energy.</em></p>
 
 ### 4.2 Band gap without transition-metal features: a big drop
 
@@ -119,27 +116,25 @@ The clearest evidence is in **what the models paid attention to** before and aft
 <th width="50%">With TM features</th>
 </tr>
 <tr>
-<td><b>Random Forest</b><br><img src="images/bandgap_noTM_rf.png"></td>
-<td><b>Random Forest</b><br><img src="images/bandgap_TM_rf.png"></td>
+<td><b>Random Forest</b><br><img width="1093" height="547" alt="image" src="https://github.com/user-attachments/assets/9cf2cfe0-5dc3-470b-ac1c-8f05e49644f8" /></td>
+<td><b>Random Forest</b><br><img width="1091" height="547" alt="image" src="https://github.com/user-attachments/assets/e7adfb2a-0d26-4ea7-bb7f-a5ec4ffcaba9" /></td>
 </tr>
 <tr>
-<td><b>XGBoost</b><br><img src="images/bandgap_noTM_xgb.png"></td>
-<td><b>XGBoost</b><br><img src="images/bandgap_TM_xgb.png"></td>
+<td><b>XGBoost</b><br><img width="1095" height="547" alt="image" src="https://github.com/user-attachments/assets/8bff45f1-7f0f-45fb-9a28-06a66e463ff2" /></td>
+<td><b>XGBoost</b><br><img width="1095" height="547" alt="image" src="https://github.com/user-attachments/assets/479ae330-a1d6-4ded-8f44-14dd9ab75044" /></td>
 </tr>
 <tr>
-<td><b>CatBoost</b><br><img src="images/bandgap_noTM_cb.png"></td>
-<td><b>CatBoost</b><br><img src="images/bandgap_TM_cb.png"></td>
+<td><b>CatBoost</b><br><img width="1095" height="547" alt="image" src="https://github.com/user-attachments/assets/5251f3da-4074-4d83-9062-518f678c954b" /></td>
+<td><b>CatBoost</b><br><img width="1121" height="547" alt="image" src="https://github.com/user-attachments/assets/fe6f390e-8bc4-43a1-9929-12964e26cec3" /></td>
 </tr>
 </table>
 
 **What the plots show**
 
-- **Without TM features (left)**, the models leaned on indirect clues such as **density**, **energy above hull**, **atomic weight** and **magnetic moment (GSmagmom)**. No single feature stood out strongly, and the three models didn't agree on what mattered. The models were guessing from indirect evidence.
+- **Without TM features (left)**, the models leaned on indirect clues such as **density**, **energy above hull**, **atomic weight** and **magnetic moment (GSmagmom)**. No single feature stood out strongly across the three models.
 - **With TM features (right)**, all three models independently ranked **`tm_oxidation_state`** as the most important feature by a wide margin, followed by **`tm_d_valence`** and **`tm_electronegativity`**. The three models now agree, which is a strong sign they found a real physical signal rather than noise.
 
-**The physics behind it, in plain terms**
-
-In these lithium–metal–oxide materials, the band gap is controlled mainly by the **transition metal's outer "d" electrons**. Lithium mostly gives away its electron, and oxygen's electrons sit in a fairly predictable place. The transition metal is the part whose electrons decide whether the material conducts.
+In these lithium–metal–oxide materials, the band gap is controlled mainly by the **transition metal's outer "d" electrons**. Lithium mostly gives away its electron, and oxygen locks its own electrons into a fixed, predictable position. The transition metal is the part whose electrons decide whether the material conducts.
 
 The **oxidation state** sets how many d electrons the metal has left. For example, iron as Fe²⁺ has 6 d electrons, while Fe³⁺ has 5. The number of d electrons, and how they fill the available energy levels, largely decides whether there is a gap for electrons to jump across and how big it is. The same metal can therefore give very different band gaps depending on its charge.
 
@@ -157,11 +152,12 @@ The original composition features **averaged across every atom in the formula**.
 
 CGCNN gave the **best band gap predictions of all the models**. Compared with the best classical model, it raised R² from 0.715 to 0.770 and cut the average error by about 0.09 eV, a reduction of roughly 17%.
 
-<p align="center"><img src="images/cgcnn_parity.png" width="550"><br><em>CGCNN predicted vs. actual band gap on the test set. Points on the red dashed line are perfect predictions.</em></p>
+<p align="center"><img width="590" height="390" alt="image" src="https://github.com/user-attachments/assets/743a2baf-0e3b-466d-bfbf-6b6ce11ff901" />
+<br><em>CGCNN predicted vs. actual band gap on the test set. Points on the red dashed line are perfect predictions.</em></p>
 
 **Why CGCNN does better**
 
-- **It sees the structure, not just the ingredients.** Two materials with the same formula can have different band gaps if their atoms are arranged differently. Averaged composition features can't tell them apart; a crystal graph can.
+- **It sees the structure of the material, not just the elements.** Two materials with the same formula can have different band gaps if their atoms are arranged differently. Averaged composition features can't tell them apart but a crystal graph can.
 - **It sees each atom's local surroundings.** A transition metal's d electrons are strongly affected by how many oxygen atoms surround it and how close they are. Message passing lets each metal atom "learn" about its neighbours directly.
 - **It doesn't need hand-made features.** The classical models only improved after the transition-metal features were designed by hand. CGCNN was given basic facts about each atom (including its d-electron count and a flag for whether it is a transition metal) and learned which patterns matter by itself.
 - **It overfits less.** The classical models scored R² of about 0.93–0.97 on training data but about 0.7 on test data, meaning they partly memorised the training set. CGCNN scored 0.88 on training and 0.77 on test, a much smaller gap, so it generalises better to new materials.
@@ -185,15 +181,8 @@ CGCNN gave the **best band gap predictions of all the models**. Compared with th
 |---|---|
 | `Battery_Research.ipynb` | Data download, exploration, feature engineering, Random Forest / XGBoost / CatBoost for formation energy and band gap, SHAP analysis, uncertainty estimates |
 | `CGCNN_Bandgap_Prediction.ipynb` | Converting crystal structures (CIF files) to graphs, and building, training and evaluating the CGCNN band gap model |
-| `images/` | Figures used in this README |
 
 ## 7. Tools used
 
 Python · pymatgen · matminer · Materials Project API · scikit-learn · XGBoost · CatBoost · Optuna · SHAP · PyTorch · PyTorch Geometric · Google Colab
 
-## 8. Possible next steps
-
-- Hold out a separate validation set for tuning and early stopping, so the test set is used only once for the final scores.
-- Add the transition-metal features to the CGCNN atoms and see whether combining both approaches does better.
-- Treat "metal vs. non-metal" as its own classification step before predicting the size of the gap, since this boundary causes the largest errors.
-- Try newer graph models (for example, ALIGNN or MEGNet) that also account for bond angles.
